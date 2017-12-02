@@ -44,6 +44,7 @@ window.addEventListener('keypress', function(evt) {
     };
     var BOB_M = 0.2;
     var SQUIRREL_FACTOR = 0.01;
+    var MAX_VELOCITY = 6;
 
     ShipsLog.log("Starting Lagoon Doubloons!");
 
@@ -173,9 +174,11 @@ window.addEventListener('keypress', function(evt) {
 
         if (window.kbState.w) {
             ship.velocity += 0.01;
+            if(ship.velocity > MAX_VELOCITY){ ship.velocity = MAX_VELOCITY; }
         }
         if (window.kbState.s) {
             ship.velocity -= 0.01;
+            if(ship.velocity < 0){ ship.velocity = 0; }
         }
         if (window.kbState.a) {
             ship.rotation.z -= Math.PI / 180.0;
