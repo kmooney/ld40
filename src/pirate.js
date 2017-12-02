@@ -1,4 +1,4 @@
-/* global THREE */
+/* global THREE, ShipsLog */
 window.kbState = {};
 
 window.addEventListener('keydown', function(evt) {
@@ -17,6 +17,17 @@ window.addEventListener('keyup', function(evt) {
     return false;
 });
 
+window.addEventListener('keypress', function(evt) {
+    "use strict";
+    if (evt.key === "`" || evt.key === '~') {
+        if (ShipsLog.visible()) {
+            ShipsLog.hide();
+        } else {
+            ShipsLog.show();
+        }
+    }
+});
+
 (function() {
     "use strict";
     var container, clock;
@@ -33,6 +44,8 @@ window.addEventListener('keyup', function(evt) {
     };
     var BOB_M = 0.2;
     var SQUIRREL_FACTOR = 0.01;
+
+    ShipsLog.log("Starting Lagoon Doubloons!");
 
     function init() {
 
@@ -56,7 +69,7 @@ window.addEventListener('keyup', function(evt) {
 
         var loader = new THREE.ColladaLoader( loadingManager );
         loader.load( '../assets/pirateship.dae', function ( collada ) {
-            console.log("Collada loader loading pirateship");
+            ShipsLog.log("Collada loader loading pirateship");
             ship = collada.scene;
             ship.velocity = 0;
         } );
