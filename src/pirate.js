@@ -198,8 +198,7 @@ window.addEventListener('keypress', function(evt) {
     }
 
     function collectCoin(which) {
-        var score += 1;
-        
+
     }
 
     function collider() {
