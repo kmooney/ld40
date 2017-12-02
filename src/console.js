@@ -18,8 +18,9 @@ window.ShipsLog =
             var msg = document.createElement('pre');
             var stamp = americanDateTime(new Date());
             msg.innerText = "[" + stamp + "] "+ str;
-            msg.style.color = '#00aaff';
+            msg.style.color = '#000';
             msg.style.display = 'inherit';
+            msg.style.opacity = 1;
 
             console.appendChild(msg);
             console.scrollTop = console.clientHeight;
