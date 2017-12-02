@@ -36,6 +36,7 @@ window.addEventListener('keypress', function(evt) {
     var coins = [],
         shoals = [];
     var map = [];
+    var score = 0;
 
     // for ocean 
     var parameters = {
@@ -196,6 +197,11 @@ window.addEventListener('keypress', function(evt) {
 
     }
 
+    function collectCoin(which) {
+        var score += 1;
+        
+    }
+
     function collider() {
         var coinNumber = 0,
             shoalNumber = 0,
@@ -207,7 +213,7 @@ window.addEventListener('keypress', function(evt) {
                 ship.position.x - shipRadius < coinMesh.position.x + radius &&
                 ship.position.z + shipRadius > coinMesh.position.z - radius &&
                 ship.position.z - shipRadius < coinMesh.position.z + radius) {
-                ShipsLog.log("Coin " + coinNumber + " collided with player");
+                collectCoin(coinNumber);
             }
             coinNumber ++;
         });
@@ -252,7 +258,7 @@ window.addEventListener('keypress', function(evt) {
         if ( ship !== undefined ) {
 
             ship.rotation.y = Math.sin(t) * BOB_M; 
-            ship.rotation.z += Math.sin(t) * SQUIRREL_FACTOR; 
+            ship.rotation.z += Math.sin(t) * SQUIRREL_FACTOR;
             ship.position.x += Math.sin(ship.rotation.z) * ship.velocity;
             ship.position.z += Math.cos(ship.rotation.z) * ship.velocity;
             //console.log(ship.position);
