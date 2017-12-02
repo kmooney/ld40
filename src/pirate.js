@@ -6,6 +6,7 @@ window.addEventListener('keydown', function(evt) {
     if (!window.kbState[evt.key]) { 
         window.kbState[evt.key] = true;
     }
+    return false;
 });
 
 window.addEventListener('keyup', function(evt) {
@@ -13,13 +14,15 @@ window.addEventListener('keyup', function(evt) {
     if (window.kbState[evt.key]) {
         window.kbState[evt.key] = false;
     }
+    return false;
 });
 
 (function() {
     "use strict";
     var container, clock;
     var camera, scene, renderer, ship, light, water;
-    var coins = [];
+    var coins = [],
+        shoals = [];
 
     // for ocean 
     var parameters = {
@@ -29,6 +32,7 @@ window.addEventListener('keyup', function(evt) {
         alpha: 1.0
     };
     var BOB_M = 0.2;
+    var SQUIRREL_FACTOR = 0.01;
 
     function init() {
 
@@ -70,10 +74,11 @@ window.addEventListener('keyup', function(evt) {
         setWater();
         setSkybox();
 
-        for(var i=0;i<5; i++){
-            addCoin(Math.random()*30,10,Math.random()*30);
+        for(var i=0;i<25; i++){
+            addCoin(Math.random()*30,1,Math.random()*30);
         }
-        //
+
+        addIsland(Math.random()*30, 0, Math.random()*30);
 
         renderer = new THREE.WebGLRenderer();
         renderer.setPixelRatio( window.devicePixelRatio );
@@ -81,6 +86,7 @@ window.addEventListener('keyup', function(evt) {
         container.appendChild( renderer.domElement );
 
         addSoundEffects();
+
 
         window.addEventListener( 'resize', onWindowResize, false );
     }
@@ -98,6 +104,19 @@ window.addEventListener('keyup', function(evt) {
         coins.push(coin);
 
         scene.add( coin );
+    }
+
+    function addIsland(x, y, z) {
+        var islandGeometry = new THREE.CylinderGeometry(2, 5, 3, 20, 3),
+            islandMaterial = new THREE.MeshBasicMaterial({color: 0xaa6600});
+        var island = new THREE.Mesh(islandGeometry, islandMaterial);
+        island.position.x = x;
+        island.position.y = y;
+        island.position.z = z;
+        shoals.push(island);
+        scene.add(island);
+
+
     }
 
     function addSoundEffects(){
@@ -162,6 +181,7 @@ window.addEventListener('keyup', function(evt) {
         if ( ship !== undefined ) {
 
             ship.rotation.y = Math.sin(t) * BOB_M; 
+            ship.rotation.z += Math.sin(t) * SQUIRREL_FACTOR; 
             ship.position.x += Math.sin(ship.rotation.z) * ship.velocity;
             ship.position.z += Math.cos(ship.rotation.z) * ship.velocity;
             //console.log(ship.position);
