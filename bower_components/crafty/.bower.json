@@ -1,0 +1,35 @@
+{
+  "name": "crafty",
+  "description": "Crafty is a modern component and event based framework for developing games in JavaScript that targets DOM, Canvas and WebGL.",
+  "keywords": [
+    "framework",
+    "javascript",
+    "game",
+    "engine"
+  ],
+  "license": [
+    "MIT"
+  ],
+  "main": "dist/crafty.js",
+  "ignore": [
+    "**",
+    "!bower.json",
+    "!README.md",
+    "!CHANGELOG.md",
+    "!dist",
+    "!dist/crafty.js",
+    "!dist/crafty-min.js"
+  ],
+  "homepage": "https://github.com/craftyjs/Crafty",
+  "version": "0.8.0",
+  "_release": "0.8.0",
+  "_resolution": {
+    "type": "version",
+    "tag": "0.8.0",
+    "commit": "6998fc9e5dd81ac253023ad85232404c696484e8"
+  },
+  "_source": "https://github.com/craftyjs/Crafty.git",
+  "_target": "~0.8.0",
+  "_originalSource": "crafty",
+  "_direct": true
+}
