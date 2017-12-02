@@ -32,8 +32,10 @@ window.addEventListener('keypress', function(evt) {
     "use strict";
     var container, clock;
     var camera, scene, renderer, ship, light, water;
+    var coin_geometry, coin_material, islandGeometry, islandMaterial;
     var coins = [],
         shoals = [];
+    var map = [];
 
     // for ocean 
     var parameters = {
@@ -44,7 +46,7 @@ window.addEventListener('keypress', function(evt) {
     };
     var BOB_M = 0.2;
     var SQUIRREL_FACTOR = 0.01;
-    var MAX_VELOCITY = 6;
+    var MAX_VELOCITY = 3;
 
     ShipsLog.log("Starting Lagoon Doubloons!");
 
@@ -90,12 +92,16 @@ window.addEventListener('keypress', function(evt) {
         setWater();
         setSkybox();
 
+        /*
         for(var i=0;i<25; i++){
             addCoin(Math.random()*30,1,Math.random()*30);
         }
 
         
         addIsland(Math.random()*30, 0, Math.random()*30);
+        */
+
+        generate_map(10,10,20);
 
         renderer = new THREE.WebGLRenderer();
         renderer.setPixelRatio( window.devicePixelRatio );
@@ -109,11 +115,25 @@ window.addEventListener('keypress', function(evt) {
         window.debug.coins = coins;
     }
 
+
+    function generate_map(w,h,s){
+        for(var i=0; i< w; i++){
+            for(var j=0; j<h; j++){
+                var v = Math.random();
+                if(v > 0.8) {
+                    addIsland(i*s,0,j*s);
+                }else if(v > 0.3){
+                    addCoin(i*s,1,j*s);
+                }else{ }
+            }
+        }    
+    }
+
     function addCoin(x,y,z){
-        //if( coin_geometry == null){
+        if( coin_geometry == null){
          var coin_geometry = new THREE.CylinderGeometry( 1, 1, 0.5, 20, 3 );
          var coin_material = new THREE.MeshBasicMaterial( {color: 0xaaaa00} );
-        //}
+        }
         var coin = new THREE.Mesh( coin_geometry, coin_material );
         coin.position.x = x;
         coin.position.y = y;
@@ -125,8 +145,10 @@ window.addEventListener('keypress', function(evt) {
     }
 
     function addIsland(x, y, z) {
-        var islandGeometry = new THREE.CylinderGeometry(2, 5, 3, 20, 3),
+        if( islandGeometry == null){
+            islandGeometry = new THREE.CylinderGeometry(2, 5, 3, 20, 3),
             islandMaterial = new THREE.MeshBasicMaterial({color: 0xaa6600});
+        }
         var island = new THREE.Mesh(islandGeometry, islandMaterial);
         island.position.x = x;
         island.position.y = y;
