@@ -37,6 +37,7 @@ window.addEventListener('keypress', function(evt) {
         shoals = [];
     var map = [];
     var score = 0;
+    var coinsound = null;
 
     // for ocean 
     var parameters = {
@@ -179,6 +180,15 @@ window.addEventListener('keypress', function(evt) {
             sound.setVolume( 0.5 );
             sound.play();
         });
+        
+        coinsound = new THREE.Audio(listener);
+        //Coin sound by Mattias Michael Lahoud
+        // https://archive.org/details/8BITCOIN01
+        audioLoader.load('../assets/sounds/ca-ching.ogg', function(buf) {
+            coinsound.setBuffer(buf);
+            coinsound.setLoop(false);
+            coinsound.setVolume(0.5);
+        });
     }
 
     function onWindowResize() {
@@ -204,6 +214,7 @@ window.addEventListener('keypress', function(evt) {
             return c.uuid === which; 
         });
         myCoin.collected = true;
+        coinsound.play();
         ShipsLog.log("I got "+myCoin.uuid);
     }
 
@@ -274,10 +285,11 @@ window.addEventListener('keypress', function(evt) {
 
         for(var c=0; c<coins.length; c++){
             if (coins[c] !== 'undefined') {
-                coins[c].rotation.z += delta * 2 ;
                 if (coins[c].collected) {
                     coins[c].position.y += 1;
-                    coins[c].rotation.z += delta * 4;
+                    coins[c].rotation.z += delta * 20;
+                } else {
+                    coins[c].rotation.z += delta * 2 ;
                 }
             }
         }
