@@ -1,6 +1,6 @@
-/* global THREE, ShipsLog */
+/* global THREE, ShipsLog, _*/
 window.kbState = {};
-
+window.debug = {};
 window.addEventListener('keydown', function(evt) {
     "use strict";
     if (!window.kbState[evt.key]) { 
@@ -75,7 +75,7 @@ window.addEventListener('keypress', function(evt) {
             ShipsLog.log("Collada loader loading pirateship");
             ship = collada.scene;
             ship.velocity = 0;
-            window.debug = {ship: ship};
+            window.debug.ship = ship;
 
         } );
 
@@ -97,6 +97,7 @@ window.addEventListener('keypress', function(evt) {
             addCoin(Math.random()*30,1,Math.random()*30);
         }
 
+        
         addIsland(Math.random()*30, 0, Math.random()*30);
         */
 
@@ -111,6 +112,7 @@ window.addEventListener('keypress', function(evt) {
 
 
         window.addEventListener( 'resize', onWindowResize, false );
+        window.debug.coins = coins;
     }
 
 
@@ -195,9 +197,31 @@ window.addEventListener('keypress', function(evt) {
     }
 
     function collider() {
-        var shipMesh = debug.ship.children[2];
-        
-      
+        var coinNumber = 0,
+            shoalNumber = 0,
+            shipRadius = ship.children[2].geometry.boundingSphere.radius;
+
+        _.each(coins, function(coinMesh) {
+            var radius = coinMesh.geometry.boundingSphere.radius;
+            if (ship.position.x + shipRadius > coinMesh.position.x - radius&& 
+                ship.position.x - shipRadius < coinMesh.position.x + radius &&
+                ship.position.z + shipRadius > coinMesh.position.z - radius &&
+                ship.position.z - shipRadius < coinMesh.position.z + radius) {
+                ShipsLog.log("Coin " + coinNumber + " collided with player");
+            }
+            coinNumber ++;
+        });
+
+        _.each(shoals, function(shoalMesh) {
+            var radius = shoalMesh.geometry.boundingSphere.radius;
+            if (ship.position.x + shipRadius > shoalMesh.position.x - radius&& 
+                ship.position.x - shipRadius < shoalMesh.position.x + radius &&
+                ship.position.z + shipRadius > shoalMesh.position.z - radius &&
+                ship.position.z - shipRadius < shoalMesh.position.z + radius) {
+                ShipsLog.log("Island " + shoalNumber + " collided with player");
+            }
+            shoalNumber ++;
+        });
     }
 
     function update() {

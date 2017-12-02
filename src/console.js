@@ -23,7 +23,7 @@ window.ShipsLog =
             msg.style.opacity = 1;
 
             console.appendChild(msg);
-            console.scrollTop = console.clientHeight;
+            console.scrollTop = console.scrollHeight;
         },
         show: function() {
             console.style.display = "block";
