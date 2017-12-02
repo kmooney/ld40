@@ -114,6 +114,7 @@ window.addEventListener('keypress', function(evt) {
 
         window.addEventListener( 'resize', onWindowResize, false );
         window.debug.coins = coins;
+        window.debug.scene = scene;
     }
 
 
@@ -132,8 +133,8 @@ window.addEventListener('keypress', function(evt) {
 
     function addCoin(x,y,z){
         if( coin_geometry == null){
-         var coin_geometry = new THREE.CylinderGeometry( 1, 1, 0.5, 20, 3 );
-         var coin_material = new THREE.MeshBasicMaterial( {color: 0xaaaa00} );
+            coin_geometry = new THREE.CylinderGeometry( 1, 1, 0.5, 20, 3 );
+            coin_material = new THREE.MeshBasicMaterial( {color: 0xaaaa00} );
         }
         var coin = new THREE.Mesh( coin_geometry, coin_material );
         coin.position.x = x;
@@ -198,7 +199,12 @@ window.addEventListener('keypress', function(evt) {
     }
 
     function collectCoin(which) {
-
+        score += 1;
+        var myCoin = _.find(coins, function(c) {
+            return c.uuid === which; 
+        });
+        myCoin.collected = true;
+        ShipsLog.log("I got "+myCoin.uuid);
     }
 
     function collider() {
@@ -207,14 +213,17 @@ window.addEventListener('keypress', function(evt) {
             shipRadius = ship.children[2].geometry.boundingSphere.radius;
 
         _.each(coins, function(coinMesh) {
-            var radius = coinMesh.geometry.boundingSphere.radius;
-            if (ship.position.x + shipRadius > coinMesh.position.x - radius&& 
-                ship.position.x - shipRadius < coinMesh.position.x + radius &&
-                ship.position.z + shipRadius > coinMesh.position.z - radius &&
-                ship.position.z - shipRadius < coinMesh.position.z + radius) {
-                collectCoin(coinNumber);
+            if (coinMesh.collected !== true) {
+                var radius = coinMesh.geometry.boundingSphere.radius;
+                var c = coinMesh.position;
+                var x = Math.pow(radius - shipRadius, 2);
+                var y = Math.pow(c.x - ship.position.x, 2) + Math.pow(c.z - ship.position.z, 2);
+                var z = Math.pow(radius + shipRadius, 2);
+                if (x <= y && y <= z) {
+                    collectCoin(coinMesh.uuid);
+                }
+                coinNumber ++;
             }
-            coinNumber ++;
         });
 
         _.each(shoals, function(shoalMesh) {
@@ -246,8 +255,8 @@ window.addEventListener('keypress', function(evt) {
             ship.rotation.z += Math.PI / 180.0;
         }
 
-        collider();
         camera.lookAt(ship.position);
+        collider();
     }
 
     function render() {
@@ -264,7 +273,13 @@ window.addEventListener('keypress', function(evt) {
         }
 
         for(var c=0; c<coins.length; c++){
-            coins[c].rotation.z += delta * 2 ;
+            if (coins[c] !== 'undefined') {
+                coins[c].rotation.z += delta * 2 ;
+                if (coins[c].collected) {
+                    coins[c].position.y += 1;
+                    coins[c].rotation.z += delta * 4;
+                }
+            }
         }
 
         water.material.uniforms.time.value += 1.0 / 200.0;
