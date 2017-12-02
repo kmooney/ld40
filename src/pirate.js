@@ -183,7 +183,7 @@ window.addEventListener('keypress', function(evt) {
         if (window.kbState.d) {
             ship.rotation.z += Math.PI / 180.0;
         }
-        //console.log(ship.velocity);
+        camera.lookAt(ship.position);
         
     }
 
