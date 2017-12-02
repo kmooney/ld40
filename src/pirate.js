@@ -72,6 +72,8 @@ window.addEventListener('keypress', function(evt) {
             ShipsLog.log("Collada loader loading pirateship");
             ship = collada.scene;
             ship.velocity = 0;
+            window.debug = {ship: ship};
+
         } );
 
 
@@ -169,6 +171,12 @@ window.addEventListener('keypress', function(evt) {
 
     }
 
+    function collider() {
+        var shipMesh = debug.ship.children[2];
+        
+      
+    }
+
     function update() {
 
         if (window.kbState.w) {
@@ -183,8 +191,9 @@ window.addEventListener('keypress', function(evt) {
         if (window.kbState.d) {
             ship.rotation.z += Math.PI / 180.0;
         }
+
+        collider();
         camera.lookAt(ship.position);
-        
     }
 
     function render() {
