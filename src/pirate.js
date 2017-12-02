@@ -240,7 +240,7 @@ window.addEventListener('keypress', function(evt) {
         var cubeMap = new THREE.CubeTexture( [] );
         cubeMap.format = THREE.RGBFormat;
         var loader = new THREE.ImageLoader();
-        loader.load( '../assets/img/skyboxsun25degtest.png', function ( image ) {
+        loader.load( '../assets/img/skyboxsun25degtest.jpg', function ( image ) {
             var getSide = function ( x, y ) {
                 var size = 1024;
                 var canvas = document.createElement( 'canvas' );
