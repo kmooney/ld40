@@ -57,7 +57,8 @@ window.addEventListener('mousemove', function(e) {
 
     var treasureMap = _.map(_.range(10), function() {return _.map(_.range(10),function() {return '';});});
     var xMarksTheSpots = {};
-    var thumpsound = null;
+    var curse_sounds = [];
+    var warning_sounds = [];
 
     // for ocean 
     var parameters = {
@@ -264,14 +265,43 @@ window.addEventListener('mousemove', function(e) {
             coinsound.setVolume(0.5);
         });
 
-        
-        thumpsound = new THREE.Audio(listener);
-        // thump sound by my fist on my desk - Nikolaj
-        audioLoader.load('../assets/sounds/thump.ogg', function(buf) {
-            thumpsound.setBuffer(buf);
-            thumpsound.setLoop(false);
-            thumpsound.setVolume(0.5);
+
+        var curse1 = new THREE.Audio(listener);
+        curse_sounds.push(curse1);
+        audioLoader.load('../assets/sounds/curse1.ogg', function(buf) {
+            curse1.setBuffer(buf);
+            curse1.setLoop(false);
+            curse1.setVolume(0.8);
         });
+        var curse2 = new THREE.Audio(listener);
+        curse_sounds.push(curse2);
+        audioLoader.load('../assets/sounds/curse2.ogg', function(buf) {
+            curse2.setBuffer(buf);
+            curse2.setLoop(false);
+            curse2.setVolume(0.8);
+        });
+        var curse3 = new THREE.Audio(listener);
+        curse_sounds.push(curse3);
+        audioLoader.load('../assets/sounds/curse3.ogg', function(buf) {
+            curse3.setBuffer(buf);
+            curse3.setLoop(false);
+            curse3.setVolume(0.8);
+        });
+        var warning1 = new THREE.Audio(listener);
+        warning_sounds.push(warning1);
+        audioLoader.load('../assets/sounds/warning1.ogg', function(buf) {
+            warning1.setBuffer(buf);
+            warning1.setLoop(false);
+            warning1.setVolume(0.8);
+        });
+        var warning2 = new THREE.Audio(listener);
+        warning_sounds.push(warning2);
+        audioLoader.load('../assets/sounds/warning2.ogg', function(buf) {
+            warning2.setBuffer(buf);
+            warning2.setLoop(false);
+            warning2.setVolume(0.8);
+        });
+
     }
 
     function onWindowResize() {
@@ -292,6 +322,13 @@ window.addEventListener('mousemove', function(e) {
 
     function collectCoin(which) {
         score += 1;
+
+        if(score == 8){
+            warning_sounds[0].play();
+        }else if(score == 12){
+            warning_sounds[1].play();
+        }
+
         HUD.updateScore(score);
         var myCoin = _.find(coins, function(c) {
             return c.uuid === which; 
@@ -365,12 +402,15 @@ window.addEventListener('mousemove', function(e) {
         ship.position.add(v);
         ship.velocity = -1 * ship.velocity;
         dumpCoins();
-        /*if(thumpsound.isPlaying){
-            thumpsound.pause();
-            thumpsound.play();
-        }else{
-            thumpsound.play()
-        }*/
+        
+        curse(); 
+    }
+
+    function curse(){
+        var c = Math.floor(Math.random() * (curse_sounds.length+1) );
+        if( c < curse_sounds.length){
+            curse_sounds[c].play(); // randomly skip the curse
+        }
     }
 
     function collider() {
