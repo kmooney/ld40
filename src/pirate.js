@@ -124,7 +124,7 @@ window.addEventListener('mousemove', function(e) {
         shoals = null;
         coins = [];
         shoals = [];
-        generate_map(BOARD_WIDTH,BOARD_HEIGHT,40);
+        generate_map(BOARD_WIDTH,BOARD_HEIGHT,25);
         HUD.updateScore(score);
         gameReady();
     }
@@ -149,7 +149,7 @@ window.addEventListener('mousemove', function(e) {
             scene.add(big_island);
             scene.add(ship);
             animate();
-            generate_map(BOARD_WIDTH,BOARD_HEIGHT,40);
+            generate_map(BOARD_WIDTH,BOARD_HEIGHT,25);
         });
 
         // collada ship
