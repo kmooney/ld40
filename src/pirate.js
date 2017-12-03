@@ -33,11 +33,13 @@ window.addEventListener('keypress', function(evt) {
     var container, clock;
     var camera, scene, renderer, ship, light, water;
     var coin_geometry, coin_material, islandGeometry, islandMaterial;
+    var island;
     var coins = [],
         shoals = [];
     var map = [];
     var score = 0;
     var coinsound = null;
+    var thumpsound = null;
 
     // for ocean 
     var parameters = {
@@ -48,7 +50,7 @@ window.addEventListener('keypress', function(evt) {
     };
     var BOB_M = 0.2;
     var SQUIRREL_FACTOR = 0.01;
-    var MAX_VELOCITY = 3;
+    var MAX_VELOCITY = 1;
 
     ShipsLog.log("Starting Lagoon Doubloons!");
 
@@ -68,6 +70,7 @@ window.addEventListener('keypress', function(evt) {
 
         var loadingManager = new THREE.LoadingManager( function() {
             scene.add(ship);
+            generate_map(10,10,20);
         });
 
         // collada ship
@@ -81,8 +84,13 @@ window.addEventListener('keypress', function(evt) {
 
         } );
 
+        loader.load( '../assets/island.dae', function ( collada ) {
+            ShipsLog.log("Collada loader loading island");
+            island = collada.scene;
+            window.debug.island = island;
+        } );
 
-        var ambientLight = new THREE.AmbientLight( 0x0000ff, 0.8 );
+        var ambientLight = new THREE.AmbientLight( 0xeeeeee, 0.4 );
         scene.add( ambientLight );
 
         var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.9 );
@@ -103,7 +111,6 @@ window.addEventListener('keypress', function(evt) {
         addIsland(Math.random()*30, 0, Math.random()*30);
         */
 
-        generate_map(10,10,20);
 
         renderer = new THREE.WebGLRenderer();
         renderer.setPixelRatio( window.devicePixelRatio );
@@ -148,6 +155,7 @@ window.addEventListener('keypress', function(evt) {
     }
 
     function addIsland(x, y, z) {
+        /*
         if( islandGeometry == null){
             islandGeometry = new THREE.CylinderGeometry(2, 5, 3, 20, 3),
             islandMaterial = new THREE.MeshBasicMaterial({color: 0xaa6600});
@@ -158,8 +166,14 @@ window.addEventListener('keypress', function(evt) {
         island.position.z = z;
         shoals.push(island);
         scene.add(island);
-
-
+        */
+        var isle = island.clone();
+        isle.position.x = x;
+        isle.position.y = y;
+        isle.position.z = z;
+        isle.rotation.z = Math.random() * Math.PI * 2;
+        shoals.push(isle);
+        scene.add(isle);
     }
 
     function addSoundEffects(){
@@ -189,6 +203,14 @@ window.addEventListener('keypress', function(evt) {
             coinsound.setLoop(false);
             coinsound.setVolume(0.5);
         });
+
+        thumpsound = new THREE.Audio(listener);
+        // thump sound by my fist on my desk - Nikolaj
+        audioLoader.load('../assets/sounds/thump.ogg', function(buf) {
+            thumpsound.setBuffer(buf);
+            thumpsound.setLoop(false);
+            thumpsound.setVolume(0.5);
+        });
     }
 
     function onWindowResize() {
@@ -214,7 +236,13 @@ window.addEventListener('keypress', function(evt) {
             return c.uuid === which; 
         });
         myCoin.collected = true;
-        coinsound.play();
+        
+        if(coinsound.isPlaying){
+            coinsound.pause();
+            coinsound.play();
+        }else{
+            coinsound.play();
+        }
         ShipsLog.log("I got "+myCoin.uuid);
     }
 
@@ -238,12 +266,19 @@ window.addEventListener('keypress', function(evt) {
         });
 
         _.each(shoals, function(shoalMesh) {
-            var radius = shoalMesh.geometry.boundingSphere.radius;
-            if (ship.position.x + shipRadius > shoalMesh.position.x - radius&& 
+            /*
+            var radius = island.geometry.boundingSphere.radius;
+            if (ship.position.x + shipRadius > shoalMesh.position.x - radius && 
                 ship.position.x - shipRadius < shoalMesh.position.x + radius &&
                 ship.position.z + shipRadius > shoalMesh.position.z - radius &&
                 ship.position.z - shipRadius < shoalMesh.position.z + radius) {
+            */
+            var radius = island.children[2].geometry.boundingSphere.radius
+            if( ship.position.distanceTo(shoalMesh.position) < shipRadius + radius){
                 ShipsLog.log("Island " + shoalNumber + " collided with player");
+                thumpsound.play();
+                score=0;
+                // Todo spill coins
             }
             shoalNumber ++;
         });
@@ -251,21 +286,31 @@ window.addEventListener('keypress', function(evt) {
 
     function update() {
 
-        if (window.kbState.w) {
+        if (window.kbState.w || window.kbState.ArrowUp) {
             ship.velocity += 0.01;
             if(ship.velocity > MAX_VELOCITY){ ship.velocity = MAX_VELOCITY; }
         }
-        if (window.kbState.s) {
+        if (window.kbState.s || window.kbState.ArrowDown) {
             ship.velocity -= 0.01;
             if(ship.velocity < 0){ ship.velocity = 0; }
         }
-        if (window.kbState.a) {
+        if (window.kbState.a || window.kbState.ArrowLeft) {
             ship.rotation.z -= Math.PI / 180.0;
         }
-        if (window.kbState.d) {
+        if (window.kbState.d || window.kbState.ArrowRight) {
             ship.rotation.z += Math.PI / 180.0;
         }
-
+       
+        // swampage    
+        if(score < 5){ 
+            ship.position.y = 0;
+        }else{
+            var swamp = (score-5)/10;
+            if(swamp > 3){ // max swamp, we should lose here!
+                swamp = 3;
+            }
+            ship.position.y = -swamp;
+        }
         camera.lookAt(ship.position);
         collider();
     }
