@@ -52,6 +52,9 @@ window.addEventListener('mousemove', function(e) {
     var map = [];
     var score = 0;
     var coinsound = null;
+
+    var treasureMap = _.map(_.range(10), function() {return _.map(_.range(10),function() {return '';});});
+    var xMarksTheSpots = {};
     var thumpsound = null;
 
     // for ocean 
@@ -64,6 +67,8 @@ window.addEventListener('mousemove', function(e) {
     var UP = new THREE.Vector3(0,1,0);
     var BOB_M = 0.2;
     var SQUIRREL_FACTOR = 0.01;
+    var BOARD_WIDTH = 10;
+    var BOARD_HEIGHT = 10;
     var INIT_MAX_VELOCITY = 3;
     var MAX_VELOCITY = INIT_MAX_VELOCITY;
 
@@ -92,8 +97,8 @@ window.addEventListener('mousemove', function(e) {
         var loadingManager = new THREE.LoadingManager( function() {
             scene.add(big_island);
             scene.add(ship);
-            generate_map(10,10,40);
             animate();
+            generate_map(BOARD_WIDTH,BOARD_HEIGHT,40);
         });
 
         // collada ship
@@ -161,8 +166,11 @@ window.addEventListener('mousemove', function(e) {
                 var v = Math.random();
                 if(v > 0.8) {
                     addIsland(i*s,0,j*s);
+                    treasureMap[i][j] = 'i';
                 }else if(v > 0.3){
-                    addCoin(i*s,3,j*s);
+                    var coin = addCoin(i*s,3,j*s);
+                    treasureMap[i][j] = 'c';
+                    xMarksTheSpots[coin.uuid] = [i, j];
                 }
             }
         }
@@ -181,6 +189,7 @@ window.addEventListener('mousemove', function(e) {
         coins.push(coin);
 
         scene.add( coin );
+        return coin;
     }
 
     function addIsland(x, y, z) {
@@ -264,8 +273,12 @@ window.addEventListener('mousemove', function(e) {
         var myCoin = _.find(coins, function(c) {
             return c.uuid === which; 
         });
+        var coords = xMarksTheSpots[myCoin.uuid];
         ship.position.y -= 0.1;
         myCoin.collected = true;
+
+        treasureMap[coords[0]][coords[1]] = '';
+        // todo remove the coin from the treasure map
         myCoin.thrust = null;
         
         if(coinsound.isPlaying){
@@ -277,25 +290,55 @@ window.addEventListener('mousemove', function(e) {
         ShipsLog.log("I got "+myCoin.uuid);
     }
 
+    function randInt(max) {
+        var min = 0
+        max = Math.floor(max);
+        // The maximum is exclusive and the minimum is inclusive
+        return Math.floor(Math.random() * (max - min)) + min; 
+
+    }
+
     function dumpCoins() {
-        score = 0;
+        
         ship.position.y = 0;
+
+        MAX_VELOCITY = 3;
+        ShipsLog.log("We have to dump the coins! Dumping " + score + " coins");
+
         _.each(coins, function(coinMesh){
-            if(coinMesh.collected && coinMesh.dumped == undefined) {
+            if(coinMesh.collected && typeof coinMesh.dumped === 'undefined') {
                 coinMesh.position.copy(ship.position);
                 coinMesh.dumped = true;
-                coinMesh.thrust = new THREE.Vector3(0.2,1,0);
+                coinMesh.thrust = new THREE.Vector3(0.5,2,0);
                 coinMesh.thrust.applyAxisAngle( new THREE.Vector3(0,1,0), (Math.random() * Math.PI*2))
             }
         });
+
         // 1. Calculate where the coins should land 1st, just needs to 
         //    be an empty spot with no islands and no coins.
         // 2. Then fire them in arcs, all at once, from your boat to their
         //    precalculated landing spots
-
+        ShipsLog.log("calculating targets...");
+        var targets = _.map(_.range(score), function() {
+            var x = randInt(BOARD_WIDTH);
+            var y = randInt(BOARD_HEIGHT);
+            while (treasureMap[x][y] !== '') {
+                x = randInt(BOARD_WIDTH);
+                y = randInt(BOARD_HEIGHT);
+            }
+            treasureMap[x][y] = 'c';
+            return [x, y];
+        });
+        ShipsLog.log("Okay!  The coins should land at " + targets);
+        score = 0;
     }
 
-    function crash() {
+    function crash(pos, geo) {
+        console.log(pos, geo);
+        var v = ship.position.clone();
+        v.sub(pos);
+        v.multiplyScalar((ship.children[2].geometry.boundingSphere.radius+geo.boundingSphere.radius)/v.length()*0.25);
+        ship.position.add(v);
         ship.velocity = -1 * ship.velocity;
         dumpCoins();
         /*if(thumpsound.isPlaying){
@@ -334,7 +377,7 @@ window.addEventListener('mousemove', function(e) {
             var y = Math.pow(c.x - ship.position.x, 2) + Math.pow(c.z - ship.position.z, 2);
             var z = Math.pow(radius + shipRadius, 2);
             if (x <= y && y <= z) {
-                crash();
+                crash(shoalMesh.position, shoalMesh.children[2].geometry);
             }
             shoalNumber ++;
         });
