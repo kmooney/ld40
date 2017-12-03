@@ -36,6 +36,11 @@ window.addEventListener('wheel', function(e) {
     window.mState.zoomIn = e.deltaY > 1 ? true : false;
 });
 
+window.addEventListener('mousemove', function(e) {
+    "use strict";
+    window.mState.deltaX = e.movementX;
+});
+
 (function() {
     "use strict";
     var container, clock;
@@ -104,7 +109,7 @@ window.addEventListener('wheel', function(e) {
         setWater();
         setSkybox();
 
-        generate_map(10,10,20);
+        generate_map(10,10,40);
 
         renderer = new THREE.WebGLRenderer();
         renderer.setPixelRatio( window.devicePixelRatio );
@@ -112,7 +117,6 @@ window.addEventListener('wheel', function(e) {
         container.appendChild( renderer.domElement );
 
         addSoundEffects();
-
 
         window.addEventListener( 'resize', onWindowResize, false );
         window.debug.coins = coins;
@@ -127,8 +131,8 @@ window.addEventListener('wheel', function(e) {
                 if(v > 0.8) {
                     addIsland(i*s,0,j*s);
                 }else if(v > 0.3){
-                    addCoin(i*s,1,j*s);
-                }else{ }
+                    addCoin(i*s,3,j*s);
+                }
             }
         }
     }
@@ -226,6 +230,11 @@ window.addEventListener('wheel', function(e) {
         ship.position.y = 0;
         MAX_VELOCITY = 3;
 
+        // 1. Calculate where the coins should land 1st, just needs to 
+        //    be an empty spot with no islands and no coins.
+        // 2. Then fire them in arcs, all at once, from your boat to their
+        //    precalculated landing spots
+
     }
 
     function crash() {
@@ -274,7 +283,10 @@ window.addEventListener('wheel', function(e) {
             ship.velocity -= 0.01;
         }
         ship.velocity = Math.min(MAX_VELOCITY, ship.velocity);
-
+        if (window.mState.deltaX) {
+            ship.rotation.z -= (Math.PI / 360.0) * window.mState.deltaX;
+        }
+/*
         if (window.kbState.a) {
             ship.rotation.z += Math.PI / 180.0;
         }
@@ -282,7 +294,7 @@ window.addEventListener('wheel', function(e) {
         if (window.kbState.d) {
             ship.rotation.z -= Math.PI / 180.0;
         }
-
+*/
         if (window.mState.zoomIn) {
             camera.position.y -= 1;
         }
