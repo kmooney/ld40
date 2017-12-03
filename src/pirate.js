@@ -51,6 +51,8 @@ window.addEventListener('mousemove', function(e) {
     var map = [];
     var score = 0;
     var coinsound = null;
+    var treasureMap = _.map(_.range(10), function() {return _.map(_.range(10),function() {return '';});});
+    var xMarksTheSpots = {};
 
     // for ocean 
     var parameters = {
@@ -62,6 +64,8 @@ window.addEventListener('mousemove', function(e) {
     var BOB_M = 0.2;
     var SQUIRREL_FACTOR = 0.01;
     var MAX_VELOCITY = 3;
+    var BOARD_WIDTH = 10;
+    var BOARD_HEIGHT = 10;
 
     ShipsLog.log("Starting Lagoon Doubloons!");
 
@@ -109,7 +113,7 @@ window.addEventListener('mousemove', function(e) {
         setWater();
         setSkybox();
 
-        generate_map(10,10,40);
+        generate_map(BOARD_WIDTH,BOARD_HEIGHT,40);
 
         renderer = new THREE.WebGLRenderer();
         renderer.setPixelRatio( window.devicePixelRatio );
@@ -130,8 +134,11 @@ window.addEventListener('mousemove', function(e) {
                 var v = Math.random();
                 if(v > 0.8) {
                     addIsland(i*s,0,j*s);
+                    treasureMap[i][j] = 'i';
                 }else if(v > 0.3){
-                    addCoin(i*s,3,j*s);
+                    var coin = addCoin(i*s,3,j*s);
+                    treasureMap[i][j] = 'c';
+                    xMarksTheSpots[coin.uuid] = [i, j];
                 }
             }
         }
@@ -150,6 +157,7 @@ window.addEventListener('mousemove', function(e) {
         coins.push(coin);
 
         scene.add( coin );
+        return coin;
     }
 
     function addIsland(x, y, z) {
@@ -220,21 +228,44 @@ window.addEventListener('mousemove', function(e) {
         var myCoin = _.find(coins, function(c) {
             return c.uuid === which; 
         });
+        var coords = xMarksTheSpots[myCoin.uuid];
         ship.position.y -= 0.1;
         myCoin.collected = true;
+        treasureMap[coords[0]][coords[1]] = '';
+        // todo remove the coin from the treasure map
         coinsound.play();
     }
 
+    function randInt(max) {
+        var min = 0
+        max = Math.floor(max);
+        // The maximum is exclusive and the minimum is inclusive
+        return Math.floor(Math.random() * (max - min)) + min; 
+
+    }
+
     function dumpCoins() {
-        score = 0;
+        
         ship.position.y = 0;
         MAX_VELOCITY = 3;
-
+        ShipsLog.log("We have to dump the coins! Dumping " + score + " coins");
         // 1. Calculate where the coins should land 1st, just needs to 
         //    be an empty spot with no islands and no coins.
         // 2. Then fire them in arcs, all at once, from your boat to their
         //    precalculated landing spots
-
+        ShipsLog.log("calculating targets...")
+        var targets = _.map(_.range(score), function() {
+            var x = randInt(BOARD_WIDTH);
+            var y = randInt(BOARD_HEIGHT);
+            while (treasureMap[x][y] !== '') {
+                x = randInt(BOARD_WIDTH);
+                y = randInt(BOARD_HEIGHT);
+            }
+            treasureMap[x][y] = 'c';
+            return [x, y];
+        });
+        ShipsLog.log("Okay!  The coins should land at " + targets);
+        score = 0;
     }
 
     function crash() {
