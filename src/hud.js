@@ -19,12 +19,16 @@ window.HUD = (function() {
     var clock = document.createElement("div");
     var score = document.createElement("div");
     var mood = document.createElement("div");
+    var endGameMessage = document.createElement("div");
     var myScore = 0;
     var timeLeft = 60;
     var almostReady = false;
     var showingTutorial = false;
     var showingTitle = false;
     var callback = null;
+    var gameEnded = false;
+    var numberFormatter = new Intl.NumberFormat('en-US', { maximumSignificantDigits: 4 });
+
 
     var inControl = true;
     title.style.background="rgba(0, 0, 0, 0) url('../assets/title.png') no-repeat scroll 50% 20%";
@@ -33,6 +37,8 @@ window.HUD = (function() {
     inflate(tutorial);
     inflate(okToGo);
     inflate(mood);
+    inflate(endGameMessage);
+
 
     clock.style.height = "6%";
     clock.style.width = "100%";
@@ -61,6 +67,8 @@ window.HUD = (function() {
     pressAKey.style['text-align'] = 'center';
     pressAKey.style['font-family'] = 'Helvetical, Arial, sans-serif';
     pressAKey.style['font-size'] = '72px';
+
+
     
     mood.style.background = 'rgba(0, 0, 0, 0) url("../assets/pirate_moods/unhappy-pirate.png") no-repeat scroll 1% 100%';
 
@@ -100,6 +108,12 @@ window.HUD = (function() {
             if (typeof callback !== 'undefined') {
                 callback();
             }
+        } else if (gameEnded) {
+            if (typeof callback !== 'undefined') {
+                callback();
+            }
+            gameEnded = false;
+            inControl = false;
         }
     });
     
@@ -157,6 +171,52 @@ window.HUD = (function() {
         },
         inControl: function() {
             return inControl;
+        },
+        gameOver: function(cb, total) {
+            var msg = "";
+            var mood = '';
+            var percentage = numberFormatter.format(100 * (myScore / total));
+            if (myScore === 0) {
+                msg = "Oh no!  You didn't get any doubloons!  Did you get a visit from the shark?";
+                mood = 'unhappy';
+            } else if (myScore < 2) {
+                msg = "Oh no!  You only got "+percentage+"% of the doubloons.";
+                mood = 'unhappy';
+            } else if (myScore < 6) {
+                msg = "Not bad!  That's "+percentage+"% of the doubloons.";
+                mood = 'ok';
+            } else {
+                msg = "Shiver me timbers!  You got a lot doubloons! A whole "+percentage+"% of 'em!";
+                mood = 'happy';
+            }
+            var dlg = document.createElement('div');
+
+            dlg.innerHTML = (msg + "<br><br>Press a key to play again!");
+
+            dlg.style['font-family'] = "'Bad Script', cursive";
+            dlg.style.background = 'rgb(196, 179, 163) url("../assets/pirate_moods/old/'+mood+'-pirate.png") no-repeat scroll 20px 10px';
+            dlg.style.width = "720px";
+            dlg.style['font-size'] = '24px';
+            dlg.style.position = "absolute";
+            dlg.style.display = "block";
+            dlg.style.top = '30%';
+            dlg.style.color = "#333";
+            dlg.style.padding = "20px 20px 40px 200px";
+
+            endGameMessage.appendChild(dlg);
+
+            hud.appendChild(endGameMessage);
+            dlg.style.left = (window.innerWidth / 2.0 - dlg.offsetWidth / 2.0) + "px";
+            callback = cb;
+            // don't unlock input here for a couple seconds
+            window.setTimeout(function() {inControl = true;}, 2000);
+            gameEnded = true;
+        },
+        hideGameOver: function() {
+            if (gameEnded) {
+                hud.removeChild(endGameMessage);
+            }
+            gameEnded = false;
         },
         readyToPlay: function(cal) {
             hud.appendChild(okToGo);

@@ -74,6 +74,7 @@ window.addEventListener('mousemove', function(e) {
     var BOARD_HEIGHT = 10;
     var INIT_MAX_VELOCITY = 3;
     var MAX_VELOCITY = INIT_MAX_VELOCITY;
+    var STARTING_POSITION = new THREE.Vector3(-113, 0, 171);
 
     var CAM_START = new THREE.Vector3( 300, 100, -2000);
     var CAM_GAMEMODE =  new THREE.Vector3(150,50,150);
@@ -83,24 +84,49 @@ window.addEventListener('mousemove', function(e) {
     var timeLeft = 0;
     var timerInterval = null;
     var music = null;
+    var musicPlaying = false;
 
-    ShipsLog.log("Starting Lagoon Doubloons!");
+    ShipsLog.log("Starting Doubloon Lagoon!");
 
     function gameReady() {
         controlsLocked = false;
-        timeLeft = 90;
+        timeLeft = 30;
         HUD.updateClock(timeLeft);
-        music.play();
+        if (!musicPlaying) {
+            music.play();
+            musicPlaying = true;
+        }
         timerInterval = window.setInterval(function() {
             if (timeLeft > 0) {
                 timeLeft -= 1;
                 HUD.updateClock(timeLeft);
+                if (timeLeft === 0) {
+                    controlsLocked = true;
+                    HUD.gameOver(resetGame, coins.length);
+                    window.clearInterval(timerInterval);
+                }
             }
         }, 1000);
     }
 
-    function stopClock() {
-        window.clearInterval(timerInterval);
+    function resetGame() {
+        var delta = ship.position.clone().sub(STARTING_POSITION);
+        ship.position.sub(delta);
+        HUD.hideGameOver();
+        score = 0;
+        _.each(coins, function(m) {
+            scene.remove(m);
+        });
+        _.each(shoals, function(m) {
+            scene.remove(m);
+        });
+        coins = null;
+        shoals = null;
+        coins = [];
+        shoals = [];
+        generate_map(BOARD_WIDTH,BOARD_HEIGHT,40);
+        HUD.updateScore(score);
+        gameReady();
     }
 
     function init() {
@@ -133,8 +159,7 @@ window.addEventListener('mousemove', function(e) {
             ShipsLog.log("Collada loader loading pirateship");
             ship = collada.scene;
             ship.velocity = 0;
-            ship.position.x = -113;
-            ship.position.z = 171;
+            ship.position.add(STARTING_POSITION);
             window.debug.ship = ship;
 
         } );
@@ -191,11 +216,8 @@ window.addEventListener('mousemove', function(e) {
                 var v = Math.random();
                 if(v > 0.8) {
                     addIsland(i*s,0,j*s);
-                    treasureMap[i][j] = 'i';
                 }else if(v > 0.3){
-                    var coin = addCoin(i*s,3,j*s);
-                    treasureMap[i][j] = 'c';
-                    xMarksTheSpots[coin.uuid] = [i, j];
+                    addCoin(i*s,3,j*s);
                 }
             }
         }
@@ -342,12 +364,11 @@ window.addEventListener('mousemove', function(e) {
         var myCoin = _.find(coins, function(c) {
             return c.uuid === which; 
         });
-        var coords = xMarksTheSpots[myCoin.uuid];
+        if (!myCoin) {
+            alert("coin not found :(");
+        }
         ship.position.y -= 0.1;
         myCoin.collected = true;
-
-        treasureMap[coords[0]][coords[1]] = '';
-        // todo remove the coin from the treasure map
         myCoin.thrust = null;
         
         if(coinsound.isPlaying){
@@ -458,19 +479,19 @@ window.addEventListener('mousemove', function(e) {
 
     function update() {
 
-        if (!controlsLocked) {
-            if (window.kbState.w || window.kbState.ArrowUp) {
-                ship.velocity += 0.01;
-            }else if (window.kbState.s || window.kbState.ArrowDown) {
-                ship.velocity -= 0.01;
-            }else{
-                if(ship.velocity < 0){ 
-                    ship.velocity += 0.01; 
-                }else if(ship.velocity > 0){
-                    ship.velocity -= 0.01; 
-                }
+        
+        if (!controlsLocked && (window.kbState.w || window.kbState.ArrowUp)) {
+            ship.velocity += 0.01;
+        }else if (!controlsLocked && (window.kbState.s || window.kbState.ArrowDown)) {
+            ship.velocity -= 0.01;
+        }else{
+            if(ship.velocity < 0){ 
+                ship.velocity += 0.01; 
+            }else if(ship.velocity > 0){
+                ship.velocity -= 0.01; 
             }
         }
+    
 
         var max_v = Math.max(MAX_VELOCITY - (score*0.3),0.3);
         if(ship.velocity > 0){ 
