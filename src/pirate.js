@@ -82,6 +82,7 @@ window.addEventListener('mousemove', function(e) {
     var controlsLocked = true;
     var timeLeft = 0;
     var timerInterval = null;
+    var music = null;
 
     ShipsLog.log("Starting Lagoon Doubloons!");
 
@@ -89,6 +90,7 @@ window.addEventListener('mousemove', function(e) {
         controlsLocked = false;
         timeLeft = 90;
         HUD.updateClock(timeLeft);
+        music.play();
         timerInterval = window.setInterval(function() {
             if (timeLeft > 0) {
                 timeLeft -= 1;
@@ -245,7 +247,8 @@ window.addEventListener('mousemove', function(e) {
         
         // create a global audio source
         var sound = new THREE.Audio( listener );
-        
+        music = new THREE.Audio(listener);
+
         var audioLoader = new THREE.AudioLoader();
         
         //Load a sound and set it as the Audio object's buffer
@@ -254,6 +257,12 @@ window.addEventListener('mousemove', function(e) {
             sound.setLoop( true );
             sound.setVolume( 0.5 );
             sound.play();
+        });
+
+        audioLoader.load('../assets/pirate.mp3', function(buf) {
+            music.setBuffer(buf);
+            music.setLoop(true);
+            music.setVolume(0.6);
         });
         
         coinsound = new THREE.Audio(listener);
