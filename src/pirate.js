@@ -1,4 +1,4 @@
-/* global THREE, ShipsLog, _*/
+/* global THREE, ShipsLog, _, HUD*/
 window.kbState = {};
 window.mState = {};
 window.debug = {};
@@ -76,14 +76,20 @@ window.addEventListener('mousemove', function(e) {
 
     var CAM_START = new THREE.Vector3( 300, 100, -2000);
     var CAM_GAMEMODE =  new THREE.Vector3(150,50,150);
-    var CAM_FLY_STEP = 4000;
+    var CAM_FLY_STEP = 500;
     var CAM_FLYIN = new THREE.Vector3().subVectors(CAM_GAMEMODE,CAM_START).multiplyScalar(1/CAM_FLY_STEP);
+    var controlsLocked = true;
+
     ShipsLog.log("Starting Lagoon Doubloons!");
+
+    function gameReady() {
+        controlsLocked = false;
+    }
 
     function init() {
 
         container = document.getElementById( 'container' );
-
+        HUD.showTitle();
         camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.1, 2000 );
         //camera.position.set( 75, 50, 30 );
         camera.position.copy(CAM_START);
@@ -387,15 +393,17 @@ window.addEventListener('mousemove', function(e) {
 
     function update() {
 
-        if (window.kbState.w || window.kbState.ArrowUp) {
-            ship.velocity += 0.01;
-        }else if (window.kbState.s || window.kbState.ArrowDown) {
-            ship.velocity -= 0.01;
-        }else{
-            if(ship.velocity < 0){ 
-                ship.velocity += 0.01; 
-            }else if(ship.velocity > 0){
-                ship.velocity -= 0.01; 
+        if (!controlsLocked) {
+            if (window.kbState.w || window.kbState.ArrowUp) {
+                ship.velocity += 0.01;
+            }else if (window.kbState.s || window.kbState.ArrowDown) {
+                ship.velocity -= 0.01;
+            }else{
+                if(ship.velocity < 0){ 
+                    ship.velocity += 0.01; 
+                }else if(ship.velocity > 0){
+                    ship.velocity -= 0.01; 
+                }
             }
         }
 
@@ -406,28 +414,30 @@ window.addEventListener('mousemove', function(e) {
             ship.velocity = -max_v/2;
         }
 
-        if (window.mState.deltaX) {
-            ship.rotation.z -= (Math.PI / 760.0) * window.mState.deltaX;
-        }
+        if (!controlsLocked) {
+            if (window.mState.deltaX) {
+                ship.rotation.z -= (Math.PI / 760.0) * window.mState.deltaX;
+            }
 
-        if (window.kbState.a || window.kbState.ArrowLeft) {
-            ship.rotation.z += Math.PI / 180.0;
-        }
+            if (window.kbState.a || window.kbState.ArrowLeft) {
+                ship.rotation.z += Math.PI / 180.0;
+            }
 
-        if (window.kbState.d || window.kbState.ArrowRight) {
-            ship.rotation.z -= Math.PI / 180.0;
-        }
+            if (window.kbState.d || window.kbState.ArrowRight) {
+                ship.rotation.z -= Math.PI / 180.0;
+            }
 
-        if (window.kbState[' ']) {
-            dumpCoins();
-        }
+            if (window.kbState[' ']) {
+                dumpCoins();
+            }
 
-        if (window.mState.zoomIn) {
-            camera.position.y -= 1;
-        }
+            if (window.mState.zoomIn) {
+                camera.position.y -= 1;
+            }
 
-        if (window.mState.zoomOut) {
-            camera.position.y += 1;
+            if (window.mState.zoomOut) {
+                camera.position.y += 1;
+            }
         }
       
         if( !camera.intro_finished  ){
@@ -437,6 +447,11 @@ window.addEventListener('mousemove', function(e) {
 
         if( camera.flyin > 0){
             camera.position.add(CAM_FLYIN);
+            camera.flyin -= 1;
+        } else if (camera.flyin == 0) {
+            HUD.readyToPlay(function() {
+                gameReady();
+            });
             camera.flyin -= 1;
         }
         camera.lookAt(ship.position);
