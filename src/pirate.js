@@ -1,6 +1,8 @@
 /* global THREE, ShipsLog, _*/
 window.kbState = {};
+window.mState = {};
 window.debug = {};
+
 window.addEventListener('keydown', function(evt) {
     "use strict";
     if (!window.kbState[evt.key]) { 
@@ -28,6 +30,17 @@ window.addEventListener('keypress', function(evt) {
     }
 });
 
+window.addEventListener('wheel', function(e) {
+    "use strict";
+    window.mState.zoomOut = e.deltaY < -1 ? true : false;
+    window.mState.zoomIn = e.deltaY > 1 ? true : false;
+});
+
+window.addEventListener('mousemove', function(e) {
+    "use strict";
+    //window.mState.deltaX = e.movementX;
+});
+
 (function() {
     "use strict";
     var container, clock;
@@ -48,9 +61,11 @@ window.addEventListener('keypress', function(evt) {
         distortionScale: 3.7,
         alpha: 1.0
     };
+    var UP = new THREE.Vector3(0,1,0);
     var BOB_M = 0.2;
     var SQUIRREL_FACTOR = 0.01;
-    var MAX_VELOCITY = 1;
+    var INIT_MAX_VELOCITY = 3;
+    var MAX_VELOCITY = INIT_MAX_VELOCITY;
 
     ShipsLog.log("Starting Lagoon Doubloons!");
 
@@ -59,9 +74,9 @@ window.addEventListener('keypress', function(evt) {
         container = document.getElementById( 'container' );
 
         camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.1, 2000 );
-        camera.position.set( 70, 50, 30 );
+        camera.position.set( 75, 50, 30 );
         camera.lookAt( new THREE.Vector3( 0, 3, 0 ) );
-
+        debug.camera = camera;
         scene = new THREE.Scene();
 
         clock = new THREE.Clock();
@@ -70,7 +85,7 @@ window.addEventListener('keypress', function(evt) {
 
         var loadingManager = new THREE.LoadingManager( function() {
             scene.add(ship);
-            generate_map(10,10,20);
+            generate_map(10,10,40);
         });
 
         // collada ship
@@ -80,6 +95,8 @@ window.addEventListener('keypress', function(evt) {
             ShipsLog.log("Collada loader loading pirateship");
             ship = collada.scene;
             ship.velocity = 0;
+            ship.position.x = -16;
+            ship.position.z = -16;
             window.debug.ship = ship;
 
         } );
@@ -89,6 +106,8 @@ window.addEventListener('keypress', function(evt) {
             island = collada.scene;
             window.debug.island = island;
         } );
+
+        // map now generated after loading Manager finishes above
 
         var ambientLight = new THREE.AmbientLight( 0xeeeeee, 0.4 );
         scene.add( ambientLight );
@@ -102,15 +121,6 @@ window.addEventListener('keypress', function(evt) {
         setWater();
         setSkybox();
 
-        /*
-        for(var i=0;i<25; i++){
-            addCoin(Math.random()*30,1,Math.random()*30);
-        }
-
-        
-        addIsland(Math.random()*30, 0, Math.random()*30);
-        */
-
 
         renderer = new THREE.WebGLRenderer();
         renderer.setPixelRatio( window.devicePixelRatio );
@@ -118,7 +128,6 @@ window.addEventListener('keypress', function(evt) {
         container.appendChild( renderer.domElement );
 
         addSoundEffects();
-
 
         window.addEventListener( 'resize', onWindowResize, false );
         window.debug.coins = coins;
@@ -133,10 +142,10 @@ window.addEventListener('keypress', function(evt) {
                 if(v > 0.8) {
                     addIsland(i*s,0,j*s);
                 }else if(v > 0.3){
-                    addCoin(i*s,1,j*s);
-                }else{ }
+                    addCoin(i*s,3,j*s);
+                }
             }
-        }    
+        }
     }
 
     function addCoin(x,y,z){
@@ -199,7 +208,7 @@ window.addEventListener('keypress', function(evt) {
         //Coin sound by Mattias Michael Lahoud
         // https://archive.org/details/8BITCOIN01
         audioLoader.load('../assets/sounds/ca-ching.ogg', function(buf) {
-            coinsound.setBuffer(buf);
+            oinsound.setBuffer(buf);
             coinsound.setLoop(false);
             coinsound.setVolume(0.5);
         });
@@ -232,10 +241,14 @@ window.addEventListener('keypress', function(evt) {
 
     function collectCoin(which) {
         score += 1;
+        MAX_VELOCITY -= 0.3;
+        MAX_VELOCITY = Math.max(MAX_VELOCITY, 0.3);
         var myCoin = _.find(coins, function(c) {
             return c.uuid === which; 
         });
+        ship.position.y -= 0.1;
         myCoin.collected = true;
+        myCoin.thrust = null;
         
         if(coinsound.isPlaying){
             coinsound.pause();
@@ -244,6 +257,36 @@ window.addEventListener('keypress', function(evt) {
             coinsound.play();
         }
         ShipsLog.log("I got "+myCoin.uuid);
+    }
+
+    function dumpCoins() {
+        score = 0;
+        ship.position.y = 0;
+        MAX_VELOCITY = INIT_MAX_VELOCITY;
+        _.each(coins, function(coinMesh){
+            if(coinMesh.collected && coinMesh.dumped == undefined) {
+                coinMesh.position.copy(ship.position);
+                coinMesh.dumped = true;
+                coinMesh.thrust = new THREE.Vector3(0.2,1,0);
+                coinMesh.thrust.applyAxisAngle( new THREE.Vector3(0,1,0), (Math.random() * Math.PI*2))
+            }
+        });
+        // 1. Calculate where the coins should land 1st, just needs to 
+        //    be an empty spot with no islands and no coins.
+        // 2. Then fire them in arcs, all at once, from your boat to their
+        //    precalculated landing spots
+
+    }
+
+    function crash() {
+        ship.velocity = -1 * ship.velocity;
+        dumpCoins();
+        if(thumpsound.isPlaying){
+            thumpsound.pause();
+            thumpsound.play();
+        }else{
+            thumpsound.play()
+        }
     }
 
     function collider() {
@@ -266,19 +309,14 @@ window.addEventListener('keypress', function(evt) {
         });
 
         _.each(shoals, function(shoalMesh) {
-            /*
-            var radius = island.geometry.boundingSphere.radius;
-            if (ship.position.x + shipRadius > shoalMesh.position.x - radius && 
-                ship.position.x - shipRadius < shoalMesh.position.x + radius &&
-                ship.position.z + shipRadius > shoalMesh.position.z - radius &&
-                ship.position.z - shipRadius < shoalMesh.position.z + radius) {
-            */
             var radius = island.children[2].geometry.boundingSphere.radius
-            if( ship.position.distanceTo(shoalMesh.position) < shipRadius + radius){
-                ShipsLog.log("Island " + shoalNumber + " collided with player");
-                thumpsound.play();
-                score=0;
-                // Todo spill coins
+            //var radius = shoalMesh.geometry.boundingSphere.radius;
+            var c = shoalMesh.position;
+            var x = Math.pow(radius - shipRadius, 2);
+            var y = Math.pow(c.x - ship.position.x, 2) + Math.pow(c.z - ship.position.z, 2);
+            var z = Math.pow(radius + shipRadius, 2);
+            if (x <= y && y <= z) {
+                crash();
             }
             shoalNumber ++;
         });
@@ -288,29 +326,48 @@ window.addEventListener('keypress', function(evt) {
 
         if (window.kbState.w || window.kbState.ArrowUp) {
             ship.velocity += 0.01;
-            if(ship.velocity > MAX_VELOCITY){ ship.velocity = MAX_VELOCITY; }
+        }else{
+            // slow things down gradually   
+            /*
+            if(Math.abs(ship.velocity) < 0.002){
+                ship.velocity = 0;
+            }else if(ship.velocity < 0){
+                ship.velocity +=0.002;
+            }else if(ship.velocity > 0){
+                ship.velocity -= 0.002;
+            }
+            */
         }
         if (window.kbState.s || window.kbState.ArrowDown) {
             ship.velocity -= 0.01;
-            if(ship.velocity < 0){ ship.velocity = 0; }
         }
+
+        if(ship.velocity > 0){ 
+            ship.velocity = Math.min(MAX_VELOCITY, ship.velocity);
+        }else if(ship.velocity < -MAX_VELOCITY/2){ //half speed in reverse
+            ship.velocity = -MAX_VELOCITY/2;
+        }
+
+        if (window.mState.deltaX) {
+            ship.rotation.z -= (Math.PI / 760.0) * window.mState.deltaX;
+        }
+
         if (window.kbState.a || window.kbState.ArrowLeft) {
-            ship.rotation.z -= Math.PI / 180.0;
-        }
-        if (window.kbState.d || window.kbState.ArrowRight) {
             ship.rotation.z += Math.PI / 180.0;
         }
-       
-        // swampage    
-        if(score < 5){ 
-            ship.position.y = 0;
-        }else{
-            var swamp = (score-5)/10;
-            if(swamp > 3){ // max swamp, we should lose here!
-                swamp = 3;
-            }
-            ship.position.y = -swamp;
+
+        if (window.kbState.d || window.kbState.ArrowRight) {
+            ship.rotation.z -= Math.PI / 180.0;
         }
+
+        if (window.mState.zoomIn) {
+            camera.position.y -= 1;
+        }
+
+        if (window.mState.zoomOut) {
+            camera.position.y += 1;
+        }
+       
         camera.lookAt(ship.position);
         collider();
     }
@@ -323,16 +380,28 @@ window.addEventListener('keypress', function(evt) {
 
             ship.rotation.y = Math.sin(t) * BOB_M; 
             ship.rotation.z += Math.sin(t) * SQUIRREL_FACTOR;
-            ship.position.x += Math.sin(ship.rotation.z) * ship.velocity;
-            ship.position.z += Math.cos(ship.rotation.z) * ship.velocity;
+            //ship.position.x += Math.sin(ship.rotation.z) * ship.velocity;
+            //ship.position.z += Math.cos(ship.rotation.z) * ship.velocity;
+            var vel = new THREE.Vector3(0,0,ship.velocity);
+            vel.applyAxisAngle( UP, ship.rotation.z ); 
+            ship.position.add(vel);
             //console.log(ship.position);
         }
 
         for(var c=0; c<coins.length; c++){
             if (coins[c] !== 'undefined') {
                 if (coins[c].collected) {
-                    coins[c].position.y += 1;
-                    coins[c].rotation.z += delta * 20;
+                    if(coins[c].thrust != null){
+                        coins[c].position.add(coins[c].thrust);
+                        coins[c].thrust.y -= 0.05; //decay
+                        /*
+                        if(coins[c].thrust.length() < 0.01){
+                            coins[c].thrust = null;
+                        }*/
+                    }else{
+                        coins[c].position.y += 1;
+                        coins[c].rotation.z += delta * 20;
+                    }
                 } else {
                     coins[c].rotation.z += delta * 2 ;
                 }
