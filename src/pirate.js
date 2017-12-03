@@ -208,7 +208,7 @@ window.addEventListener('mousemove', function(e) {
         //Coin sound by Mattias Michael Lahoud
         // https://archive.org/details/8BITCOIN01
         audioLoader.load('../assets/sounds/ca-ching.ogg', function(buf) {
-            oinsound.setBuffer(buf);
+            coinsound.setBuffer(buf);
             coinsound.setLoop(false);
             coinsound.setVolume(0.5);
         });
@@ -241,8 +241,6 @@ window.addEventListener('mousemove', function(e) {
 
     function collectCoin(which) {
         score += 1;
-        MAX_VELOCITY -= 0.3;
-        MAX_VELOCITY = Math.max(MAX_VELOCITY, 0.3);
         var myCoin = _.find(coins, function(c) {
             return c.uuid === which; 
         });
@@ -262,7 +260,6 @@ window.addEventListener('mousemove', function(e) {
     function dumpCoins() {
         score = 0;
         ship.position.y = 0;
-        MAX_VELOCITY = INIT_MAX_VELOCITY;
         _.each(coins, function(coinMesh){
             if(coinMesh.collected && coinMesh.dumped == undefined) {
                 coinMesh.position.copy(ship.position);
@@ -326,26 +323,22 @@ window.addEventListener('mousemove', function(e) {
 
         if (window.kbState.w || window.kbState.ArrowUp) {
             ship.velocity += 0.01;
-        }else{
-            // slow things down gradually   
-            /*
-            if(Math.abs(ship.velocity) < 0.002){
-                ship.velocity = 0;
-            }else if(ship.velocity < 0){
-                ship.velocity +=0.002;
-            }else if(ship.velocity > 0){
-                ship.velocity -= 0.002;
-            }
-            */
-        }
-        if (window.kbState.s || window.kbState.ArrowDown) {
+        }else if (window.kbState.s || window.kbState.ArrowDown) {
             ship.velocity -= 0.01;
+        }else{
+            if(ship.velocity < 0){ 
+                ship.velocity += 0.01; 
+            }else if(ship.velocity > 0){
+                ship.velocity -= 0.01; 
+            }
+            
         }
 
+        var max_v = Math.max(MAX_VELOCITY - (score*0.3),0.3);
         if(ship.velocity > 0){ 
-            ship.velocity = Math.min(MAX_VELOCITY, ship.velocity);
-        }else if(ship.velocity < -MAX_VELOCITY/2){ //half speed in reverse
-            ship.velocity = -MAX_VELOCITY/2;
+            ship.velocity = Math.min(max_v, ship.velocity);
+        }else if(ship.velocity < -max_V/2){ //half speed in reverse
+            ship.velocity = -max_v/2;
         }
 
         if (window.mState.deltaX) {
