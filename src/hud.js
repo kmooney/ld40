@@ -16,6 +16,8 @@ window.HUD = (function() {
     var tutorial = document.createElement("div");
     var okToGo = document.createElement("div");
     var pressAKey = document.createElement('p');
+    var clock = document.createElement("div");
+    var score = document.createElement("div");
     var myScore = 0;
     var timeLeft = 60;
     var almostReady = false;
@@ -29,7 +31,28 @@ window.HUD = (function() {
     inflate(hud);
     inflate(tutorial);
     inflate(okToGo);
-    
+
+    clock.style.height = "6%";
+    clock.style.width = "100%";
+    clock.style.position = 'absolute';
+    clock.style.color = 'white';
+    clock.style.background = 'rgba(0,0,0,0.3)';
+    clock.style['font-family'] = 'Helvetical, Arial, sans-serif';
+    clock.style['font-size'] = '48px';
+    clock.style['text-align'] = 'center';
+
+    score.style.height = "5%";
+    score.style.width = "100%";
+    score.style.position = 'absolute';
+    score.style.bottom = 0;
+    score.style.color = 'white';
+    score.style.background = 'rgba(0,0,0,0.3)';
+    score.style['font-family'] = 'Helvetical, Arial, sans-serif';
+    score.style['font-size'] = '32px';
+    score.style['text-align'] = 'left';
+    score.style.padding = "10px 0 0 20px";
+
+
     pressAKey.innerText = "Press a key to start";
     pressAKey.style.position = 'absolute';
     pressAKey.style.color = "white";
@@ -64,6 +87,8 @@ window.HUD = (function() {
         } else if (showingTutorial) {
             HUD.hideTutorial();
             inControl = false;
+            HUD.showClock();
+            HUD.showScore();
             // return control to game
             if (typeof callback !== 'undefined') {
                 callback();
@@ -97,15 +122,18 @@ window.HUD = (function() {
         },
         showScore: function() {
             hud.appendChild(score);
+            HUD.updateScore(0);
         },
         hideScore: function() {
             hud.removeChild(score);
         },
         updateScore: function(how_much) {
             myScore = how_much;
+            score.innerText = how_much + (how_much === 1 ? " doubloon." : " doubloons!");
         },
         updateClock: function(how_much) {
             timeLeft = how_much;
+            clock.innerText = timeLeft + " seconds";
         },
         visible: function() {
             return visible;

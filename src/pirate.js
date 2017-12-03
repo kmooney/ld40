@@ -79,11 +79,25 @@ window.addEventListener('mousemove', function(e) {
     var CAM_FLY_STEP = 500;
     var CAM_FLYIN = new THREE.Vector3().subVectors(CAM_GAMEMODE,CAM_START).multiplyScalar(1/CAM_FLY_STEP);
     var controlsLocked = true;
+    var timeLeft = 0;
+    var timerInterval = null;
 
     ShipsLog.log("Starting Lagoon Doubloons!");
 
     function gameReady() {
         controlsLocked = false;
+        timeLeft = 90;
+        HUD.updateClock(timeLeft);
+        timerInterval = window.setInterval(function() {
+            if (timeLeft > 0) {
+                timeLeft -= 1;
+                HUD.updateClock(timeLeft);
+            }
+        }, 1000);
+    }
+
+    function stopClock() {
+        window.clearInterval(timerInterval);
     }
 
     function init() {
@@ -278,6 +292,7 @@ window.addEventListener('mousemove', function(e) {
 
     function collectCoin(which) {
         score += 1;
+        HUD.updateScore(score);
         var myCoin = _.find(coins, function(c) {
             return c.uuid === which; 
         });
@@ -339,6 +354,7 @@ window.addEventListener('mousemove', function(e) {
         });
         ShipsLog.log("Okay!  The coins should land at " + targets);
         score = 0;
+        HUD.updateScore(0);
     }
 
     function crash(pos, geo) {
