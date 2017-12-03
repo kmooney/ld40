@@ -337,7 +337,7 @@ window.addEventListener('mousemove', function(e) {
         var max_v = Math.max(MAX_VELOCITY - (score*0.3),0.3);
         if(ship.velocity > 0){ 
             ship.velocity = Math.min(max_v, ship.velocity);
-        }else if(ship.velocity < -max_V/2){ //half speed in reverse
+        }else if(ship.velocity < -max_v/2){ //half speed in reverse
             ship.velocity = -max_v/2;
         }
 
