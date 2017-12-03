@@ -286,10 +286,10 @@ window.addEventListener('mousemove', function(e) {
         ShipsLog.log("We have to dump the coins! Dumping " + score + " coins");
 
         _.each(coins, function(coinMesh){
-            if(coinMesh.collected && coinMesh.dumped == undefined) {
+            if(coinMesh.collected && typeof coinMesh.dumped === 'undefined') {
                 coinMesh.position.copy(ship.position);
                 coinMesh.dumped = true;
-                coinMesh.thrust = new THREE.Vector3(0.2,1,0);
+                coinMesh.thrust = new THREE.Vector3(0.5,2,0);
                 coinMesh.thrust.applyAxisAngle( new THREE.Vector3(0,1,0), (Math.random() * Math.PI*2))
             }
         });
