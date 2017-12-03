@@ -46,7 +46,7 @@ window.addEventListener('mousemove', function(e) {
     var container, clock;
     var camera, scene, renderer, ship, light, water;
     var coin_geometry, coin_material, islandGeometry, islandMaterial;
-    var island;
+    var island, big_island;
     var coins = [],
         shoals = [];
     var map = [];
@@ -67,6 +67,10 @@ window.addEventListener('mousemove', function(e) {
     var INIT_MAX_VELOCITY = 3;
     var MAX_VELOCITY = INIT_MAX_VELOCITY;
 
+    var CAM_START = new THREE.Vector3( 300, 100, -2000);
+    var CAM_GAMEMODE =  new THREE.Vector3(150,50,150);
+    var CAM_FLY_STEP = 2000;
+    var CAM_FLYIN = new THREE.Vector3().subVectors(CAM_GAMEMODE,CAM_START).multiplyScalar(1/CAM_FLY_STEP);
     ShipsLog.log("Starting Lagoon Doubloons!");
 
     function init() {
@@ -74,8 +78,10 @@ window.addEventListener('mousemove', function(e) {
         container = document.getElementById( 'container' );
 
         camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.1, 2000 );
-        camera.position.set( 75, 50, 30 );
+        //camera.position.set( 75, 50, 30 );
+        camera.position.copy(CAM_START);
         camera.lookAt( new THREE.Vector3( 0, 3, 0 ) );
+        camera.flyin = CAM_FLY_STEP;
         debug.camera = camera;
         scene = new THREE.Scene();
 
@@ -84,8 +90,10 @@ window.addEventListener('mousemove', function(e) {
         // loading manager
 
         var loadingManager = new THREE.LoadingManager( function() {
+            scene.add(big_island);
             scene.add(ship);
             generate_map(10,10,40);
+            animate();
         });
 
         // collada ship
@@ -105,6 +113,18 @@ window.addEventListener('mousemove', function(e) {
             ShipsLog.log("Collada loader loading island");
             island = collada.scene;
             window.debug.island = island;
+        } );
+
+        loader.load( '../assets/big_island.dae', function ( collada ) {
+            ShipsLog.log("Collada loader loading Big island");
+            big_island = collada.scene;
+            big_island.position.z = 180;
+            big_island.position.x = -200;
+            big_island.position.y = 20;
+            big_island.rotation.y = (Math.PI*2)/360 * 10;
+            big_island.scale.multiplyScalar(20);
+
+            window.debug.big_island = big_island;
         } );
 
         // map now generated after loading Manager finishes above
@@ -213,6 +233,7 @@ window.addEventListener('mousemove', function(e) {
             coinsound.setVolume(0.5);
         });
 
+        
         thumpsound = new THREE.Audio(listener);
         // thump sound by my fist on my desk - Nikolaj
         audioLoader.load('../assets/sounds/thump.ogg', function(buf) {
@@ -234,7 +255,6 @@ window.addEventListener('mousemove', function(e) {
     function animate() {
 
         requestAnimationFrame( animate );
-
         render();
 
     }
@@ -249,8 +269,8 @@ window.addEventListener('mousemove', function(e) {
         myCoin.thrust = null;
         
         if(coinsound.isPlaying){
-            coinsound.pause();
-            coinsound.play();
+            //coinsound.pause();
+            //coinsound.play();
         }else{
             coinsound.play();
         }
@@ -278,15 +298,16 @@ window.addEventListener('mousemove', function(e) {
     function crash() {
         ship.velocity = -1 * ship.velocity;
         dumpCoins();
-        if(thumpsound.isPlaying){
+        /*if(thumpsound.isPlaying){
             thumpsound.pause();
             thumpsound.play();
         }else{
             thumpsound.play()
-        }
+        }*/
     }
 
     function collider() {
+
         var coinNumber = 0,
             shoalNumber = 0,
             shipRadius = ship.children[2].geometry.boundingSphere.radius;
@@ -360,8 +381,18 @@ window.addEventListener('mousemove', function(e) {
         if (window.mState.zoomOut) {
             camera.position.y += 1;
         }
-       
+      
+        if( !camera.intro_finished  ){
+            camera.position
+        }
+
+
+        if( camera.flyin > 0){
+            camera.position.add(CAM_FLYIN);
+            camera.flyin -= 1;
+        }
         camera.lookAt(ship.position);
+
         collider();
     }
 
@@ -471,6 +502,5 @@ window.addEventListener('mousemove', function(e) {
     }
 
     init();
-    animate();
     window.setInterval(update, 1.0/30.0);
 })();
