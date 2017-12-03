@@ -5,9 +5,11 @@ window.debug = {};
 
 window.addEventListener('keydown', function(evt) {
     "use strict";
+
     if (!window.kbState[evt.key]) { 
         window.kbState[evt.key] = true;
     }
+
     return false;
 });
 
@@ -74,7 +76,7 @@ window.addEventListener('mousemove', function(e) {
 
     var CAM_START = new THREE.Vector3( 300, 100, -2000);
     var CAM_GAMEMODE =  new THREE.Vector3(150,50,150);
-    var CAM_FLY_STEP = 2000;
+    var CAM_FLY_STEP = 4000;
     var CAM_FLYIN = new THREE.Vector3().subVectors(CAM_GAMEMODE,CAM_START).multiplyScalar(1/CAM_FLY_STEP);
     ShipsLog.log("Starting Lagoon Doubloons!");
 
@@ -87,7 +89,7 @@ window.addEventListener('mousemove', function(e) {
         camera.position.copy(CAM_START);
         camera.lookAt( new THREE.Vector3( 0, 3, 0 ) );
         camera.flyin = CAM_FLY_STEP;
-        debug.camera = camera;
+        window.debug.camera = camera;
         scene = new THREE.Scene();
 
         clock = new THREE.Clock();
@@ -108,8 +110,8 @@ window.addEventListener('mousemove', function(e) {
             ShipsLog.log("Collada loader loading pirateship");
             ship = collada.scene;
             ship.velocity = 0;
-            ship.position.x = -16;
-            ship.position.z = -16;
+            ship.position.x = -113;
+            ship.position.z = 171;
             window.debug.ship = ship;
 
         } );
@@ -395,7 +397,6 @@ window.addEventListener('mousemove', function(e) {
             }else if(ship.velocity > 0){
                 ship.velocity -= 0.01; 
             }
-            
         }
 
         var max_v = Math.max(MAX_VELOCITY - (score*0.3),0.3);
@@ -415,6 +416,10 @@ window.addEventListener('mousemove', function(e) {
 
         if (window.kbState.d || window.kbState.ArrowRight) {
             ship.rotation.z -= Math.PI / 180.0;
+        }
+
+        if (window.kbState[' ']) {
+            dumpCoins();
         }
 
         if (window.mState.zoomIn) {
