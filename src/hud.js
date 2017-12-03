@@ -18,6 +18,7 @@ window.HUD = (function() {
     var pressAKey = document.createElement('p');
     var clock = document.createElement("div");
     var score = document.createElement("div");
+    var mood = document.createElement("div");
     var myScore = 0;
     var timeLeft = 60;
     var almostReady = false;
@@ -31,6 +32,7 @@ window.HUD = (function() {
     inflate(hud);
     inflate(tutorial);
     inflate(okToGo);
+    inflate(mood);
 
     clock.style.height = "6%";
     clock.style.width = "100%";
@@ -50,7 +52,7 @@ window.HUD = (function() {
     score.style['font-family'] = 'Helvetical, Arial, sans-serif';
     score.style['font-size'] = '32px';
     score.style['text-align'] = 'left';
-    score.style.padding = "10px 0 0 20px";
+    score.style.padding = "10px 0 0 140px";
 
 
     pressAKey.innerText = "Press a key to start";
@@ -59,9 +61,13 @@ window.HUD = (function() {
     pressAKey.style['text-align'] = 'center';
     pressAKey.style['font-family'] = 'Helvetical, Arial, sans-serif';
     pressAKey.style['font-size'] = '72px';
+    
+    mood.style.background = 'rgba(0, 0, 0, 0) url("../assets/pirate_moods/unhappy-pirate.png") no-repeat scroll 1% 100%';
+
 
     okToGo.appendChild(pressAKey);
     tutorial.style.background="rgba(0, 0, 0, 0) url('../assets/pirate-info.png') no-repeat scroll 50% 20%";
+
 
     var visible = true;
     
@@ -89,6 +95,7 @@ window.HUD = (function() {
             inControl = false;
             HUD.showClock();
             HUD.showScore();
+            HUD.showMood();
             // return control to game
             if (typeof callback !== 'undefined') {
                 callback();
@@ -97,6 +104,9 @@ window.HUD = (function() {
     });
     
     return {
+        showMood: function() {
+            hud.appendChild(mood);
+        },
         showTitle: function() {
             hud.appendChild(title);
             showingTitle = true;
@@ -130,6 +140,13 @@ window.HUD = (function() {
         updateScore: function(how_much) {
             myScore = how_much;
             score.innerText = how_much + (how_much === 1 ? " doubloon." : " doubloons!");
+            if (myScore < 2) {
+                mood.style['background-image'] = 'url("../assets/pirate_moods/unhappy-pirate.png")';
+            } else if (myScore < 6) {
+                mood.style['background-image'] = 'url("../assets/pirate_moods/ok-pirate.png")';
+            } else {
+                mood.style['background-image'] = 'url("../assets/pirate_moods/happy-pirate.png")';
+            }
         },
         updateClock: function(how_much) {
             timeLeft = how_much;
