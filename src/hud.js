@@ -52,7 +52,7 @@ window.HUD = (function() {
     score.style['font-family'] = 'Helvetical, Arial, sans-serif';
     score.style['font-size'] = '32px';
     score.style['text-align'] = 'left';
-    score.style.padding = "10px 0 0 140px";
+    score.style.padding = "10px 0 0 200px";
 
 
     pressAKey.innerText = "Press a key to start";
