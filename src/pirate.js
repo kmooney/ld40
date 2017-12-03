@@ -284,9 +284,9 @@ window.addEventListener('mousemove', function(e) {
         }
         ship.velocity = Math.min(MAX_VELOCITY, ship.velocity);
         if (window.mState.deltaX) {
-            ship.rotation.z -= (Math.PI / 360.0) * window.mState.deltaX;
+            ship.rotation.z -= (Math.PI / 760.0) * window.mState.deltaX;
         }
-/*
+
         if (window.kbState.a) {
             ship.rotation.z += Math.PI / 180.0;
         }
@@ -294,7 +294,7 @@ window.addEventListener('mousemove', function(e) {
         if (window.kbState.d) {
             ship.rotation.z -= Math.PI / 180.0;
         }
-*/
+
         if (window.mState.zoomIn) {
             camera.position.y -= 1;
         }
