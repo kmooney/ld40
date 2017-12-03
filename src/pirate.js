@@ -38,7 +38,7 @@ window.addEventListener('wheel', function(e) {
 
 window.addEventListener('mousemove', function(e) {
     "use strict";
-    window.mState.deltaX = e.movementX;
+    //window.mState.deltaX = e.movementX;
 });
 
 (function() {
@@ -46,13 +46,16 @@ window.addEventListener('mousemove', function(e) {
     var container, clock;
     var camera, scene, renderer, ship, light, water;
     var coin_geometry, coin_material, islandGeometry, islandMaterial;
+    var island;
     var coins = [],
         shoals = [];
     var map = [];
     var score = 0;
     var coinsound = null;
+
     var treasureMap = _.map(_.range(10), function() {return _.map(_.range(10),function() {return '';});});
     var xMarksTheSpots = {};
+    var thumpsound = null;
 
     // for ocean 
     var parameters = {
@@ -61,11 +64,13 @@ window.addEventListener('mousemove', function(e) {
         distortionScale: 3.7,
         alpha: 1.0
     };
+    var UP = new THREE.Vector3(0,1,0);
     var BOB_M = 0.2;
     var SQUIRREL_FACTOR = 0.01;
-    var MAX_VELOCITY = 3;
     var BOARD_WIDTH = 10;
     var BOARD_HEIGHT = 10;
+    var INIT_MAX_VELOCITY = 3;
+    var MAX_VELOCITY = INIT_MAX_VELOCITY;
 
     ShipsLog.log("Starting Lagoon Doubloons!");
 
@@ -85,6 +90,7 @@ window.addEventListener('mousemove', function(e) {
 
         var loadingManager = new THREE.LoadingManager( function() {
             scene.add(ship);
+            generate_map(BOARD_WIDTH,BOARD_HEIGHT,40);
         });
 
         // collada ship
@@ -100,8 +106,15 @@ window.addEventListener('mousemove', function(e) {
 
         } );
 
+        loader.load( '../assets/island.dae', function ( collada ) {
+            ShipsLog.log("Collada loader loading island");
+            island = collada.scene;
+            window.debug.island = island;
+        } );
 
-        var ambientLight = new THREE.AmbientLight( 0x0000ff, 0.8 );
+        // map now generated after loading Manager finishes above
+
+        var ambientLight = new THREE.AmbientLight( 0xeeeeee, 0.4 );
         scene.add( ambientLight );
 
         var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.9 );
@@ -113,7 +126,6 @@ window.addEventListener('mousemove', function(e) {
         setWater();
         setSkybox();
 
-        generate_map(BOARD_WIDTH,BOARD_HEIGHT,40);
 
         renderer = new THREE.WebGLRenderer();
         renderer.setPixelRatio( window.devicePixelRatio );
@@ -161,6 +173,7 @@ window.addEventListener('mousemove', function(e) {
     }
 
     function addIsland(x, y, z) {
+        /*
         if( islandGeometry == null){
             islandGeometry = new THREE.CylinderGeometry(2, 5, 3, 20, 3),
             islandMaterial = new THREE.MeshBasicMaterial({color: 0xaa6600});
@@ -171,8 +184,14 @@ window.addEventListener('mousemove', function(e) {
         island.position.z = z;
         shoals.push(island);
         scene.add(island);
-
-
+        */
+        var isle = island.clone();
+        isle.position.x = x;
+        isle.position.y = y;
+        isle.position.z = z;
+        isle.rotation.z = Math.random() * Math.PI * 2;
+        shoals.push(isle);
+        scene.add(isle);
     }
 
     function addSoundEffects(){
@@ -202,6 +221,14 @@ window.addEventListener('mousemove', function(e) {
             coinsound.setLoop(false);
             coinsound.setVolume(0.5);
         });
+
+        thumpsound = new THREE.Audio(listener);
+        // thump sound by my fist on my desk - Nikolaj
+        audioLoader.load('../assets/sounds/thump.ogg', function(buf) {
+            thumpsound.setBuffer(buf);
+            thumpsound.setLoop(false);
+            thumpsound.setVolume(0.5);
+        });
     }
 
     function onWindowResize() {
@@ -223,17 +250,24 @@ window.addEventListener('mousemove', function(e) {
 
     function collectCoin(which) {
         score += 1;
-        MAX_VELOCITY -= 0.3;
-        MAX_VELOCITY = Math.max(MAX_VELOCITY, 0.3);
         var myCoin = _.find(coins, function(c) {
             return c.uuid === which; 
         });
         var coords = xMarksTheSpots[myCoin.uuid];
         ship.position.y -= 0.1;
         myCoin.collected = true;
+
         treasureMap[coords[0]][coords[1]] = '';
         // todo remove the coin from the treasure map
-        coinsound.play();
+        myCoin.thrust = null;
+        
+        if(coinsound.isPlaying){
+            coinsound.pause();
+            coinsound.play();
+        }else{
+            coinsound.play();
+        }
+        ShipsLog.log("I got "+myCoin.uuid);
     }
 
     function randInt(max) {
@@ -247,13 +281,24 @@ window.addEventListener('mousemove', function(e) {
     function dumpCoins() {
         
         ship.position.y = 0;
+
         MAX_VELOCITY = 3;
         ShipsLog.log("We have to dump the coins! Dumping " + score + " coins");
+
+        _.each(coins, function(coinMesh){
+            if(coinMesh.collected && coinMesh.dumped == undefined) {
+                coinMesh.position.copy(ship.position);
+                coinMesh.dumped = true;
+                coinMesh.thrust = new THREE.Vector3(0.2,1,0);
+                coinMesh.thrust.applyAxisAngle( new THREE.Vector3(0,1,0), (Math.random() * Math.PI*2))
+            }
+        });
+
         // 1. Calculate where the coins should land 1st, just needs to 
         //    be an empty spot with no islands and no coins.
         // 2. Then fire them in arcs, all at once, from your boat to their
         //    precalculated landing spots
-        ShipsLog.log("calculating targets...")
+        ShipsLog.log("calculating targets...");
         var targets = _.map(_.range(score), function() {
             var x = randInt(BOARD_WIDTH);
             var y = randInt(BOARD_HEIGHT);
@@ -268,9 +313,20 @@ window.addEventListener('mousemove', function(e) {
         score = 0;
     }
 
-    function crash() {
+    function crash(pos, geo) {
+        console.log(pos, geo);
+        var v = ship.position.clone();
+        v.sub(pos);
+        v.multiplyScalar((ship.children[2].geometry.boundingSphere.radius+geo.boundingSphere.radius)/v.length()*0.25);
+        ship.position.add(v);
         ship.velocity = -1 * ship.velocity;
         dumpCoins();
+        if(thumpsound.isPlaying){
+            thumpsound.pause();
+            thumpsound.play();
+        }else{
+            thumpsound.play();
+        }
     }
 
     function collider() {
@@ -293,13 +349,14 @@ window.addEventListener('mousemove', function(e) {
         });
 
         _.each(shoals, function(shoalMesh) {
-            var radius = shoalMesh.geometry.boundingSphere.radius;
+            var radius = island.children[2].geometry.boundingSphere.radius
+            //var radius = shoalMesh.geometry.boundingSphere.radius;
             var c = shoalMesh.position;
             var x = Math.pow(radius - shipRadius, 2);
             var y = Math.pow(c.x - ship.position.x, 2) + Math.pow(c.z - ship.position.z, 2);
             var z = Math.pow(radius + shipRadius, 2);
             if (x <= y && y <= z) {
-                crash();
+                crash(shoalMesh.position, shoalMesh.children[2].geometry);
             }
             shoalNumber ++;
         });
@@ -307,22 +364,35 @@ window.addEventListener('mousemove', function(e) {
 
     function update() {
 
-        if (window.kbState.w) {
+        if (window.kbState.w || window.kbState.ArrowUp) {
             ship.velocity += 0.01;
-        }
-        if (window.kbState.s) {
+        }else if (window.kbState.s || window.kbState.ArrowDown) {
             ship.velocity -= 0.01;
+        }else{
+            if(ship.velocity < 0){ 
+                ship.velocity += 0.01; 
+            }else if(ship.velocity > 0){
+                ship.velocity -= 0.01; 
+            }
+            
         }
-        ship.velocity = Math.min(MAX_VELOCITY, ship.velocity);
+
+        var max_v = Math.max(MAX_VELOCITY - (score*0.3),0.3);
+        if(ship.velocity > 0){ 
+            ship.velocity = Math.min(max_v, ship.velocity);
+        }else if(ship.velocity < -max_v/2){ //half speed in reverse
+            ship.velocity = -max_v/2;
+        }
+
         if (window.mState.deltaX) {
             ship.rotation.z -= (Math.PI / 760.0) * window.mState.deltaX;
         }
 
-        if (window.kbState.a) {
+        if (window.kbState.a || window.kbState.ArrowLeft) {
             ship.rotation.z += Math.PI / 180.0;
         }
 
-        if (window.kbState.d) {
+        if (window.kbState.d || window.kbState.ArrowRight) {
             ship.rotation.z -= Math.PI / 180.0;
         }
 
@@ -333,7 +403,7 @@ window.addEventListener('mousemove', function(e) {
         if (window.mState.zoomOut) {
             camera.position.y += 1;
         }
-
+       
         camera.lookAt(ship.position);
         collider();
     }
@@ -346,16 +416,28 @@ window.addEventListener('mousemove', function(e) {
 
             ship.rotation.y = Math.sin(t) * BOB_M; 
             ship.rotation.z += Math.sin(t) * SQUIRREL_FACTOR;
-            ship.position.x += Math.sin(ship.rotation.z) * ship.velocity;
-            ship.position.z += Math.cos(ship.rotation.z) * ship.velocity;
+            //ship.position.x += Math.sin(ship.rotation.z) * ship.velocity;
+            //ship.position.z += Math.cos(ship.rotation.z) * ship.velocity;
+            var vel = new THREE.Vector3(0,0,ship.velocity);
+            vel.applyAxisAngle( UP, ship.rotation.z ); 
+            ship.position.add(vel);
             //console.log(ship.position);
         }
 
         for(var c=0; c<coins.length; c++){
             if (coins[c] !== 'undefined') {
                 if (coins[c].collected) {
-                    coins[c].position.y += 1;
-                    coins[c].rotation.z += delta * 20;
+                    if(coins[c].thrust != null){
+                        coins[c].position.add(coins[c].thrust);
+                        coins[c].thrust.y -= 0.05; //decay
+                        /*
+                        if(coins[c].thrust.length() < 0.01){
+                            coins[c].thrust = null;
+                        }*/
+                    }else{
+                        coins[c].position.y += 1;
+                        coins[c].rotation.z += delta * 20;
+                    }
                 } else {
                     coins[c].rotation.z += delta * 2 ;
                 }
