@@ -1,6 +1,8 @@
 /* global THREE, ShipsLog, _*/
 window.kbState = {};
+window.mState = {};
 window.debug = {};
+
 window.addEventListener('keydown', function(evt) {
     "use strict";
     if (!window.kbState[evt.key]) { 
@@ -26,6 +28,12 @@ window.addEventListener('keypress', function(evt) {
             ShipsLog.show();
         }
     }
+});
+
+window.addEventListener('wheel', function(e) {
+    "use strict";
+    window.mState.zoomOut = e.deltaY < -1 ? true : false;
+    window.mState.zoomIn = e.deltaY > 1 ? true : false;
 });
 
 (function() {
@@ -57,9 +65,9 @@ window.addEventListener('keypress', function(evt) {
         container = document.getElementById( 'container' );
 
         camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.1, 2000 );
-        camera.position.set( 70, 50, 30 );
+        camera.position.set( 75, 50, 30 );
         camera.lookAt( new THREE.Vector3( 0, 3, 0 ) );
-
+        debug.camera = camera;
         scene = new THREE.Scene();
 
         clock = new THREE.Clock();
@@ -77,6 +85,8 @@ window.addEventListener('keypress', function(evt) {
             ShipsLog.log("Collada loader loading pirateship");
             ship = collada.scene;
             ship.velocity = 0;
+            ship.position.x = -16;
+            ship.position.z = -16;
             window.debug.ship = ship;
 
         } );
@@ -93,15 +103,6 @@ window.addEventListener('keypress', function(evt) {
 
         setWater();
         setSkybox();
-
-        /*
-        for(var i=0;i<25; i++){
-            addCoin(Math.random()*30,1,Math.random()*30);
-        }
-
-        
-        addIsland(Math.random()*30, 0, Math.random()*30);
-        */
 
         generate_map(10,10,20);
 
@@ -129,7 +130,7 @@ window.addEventListener('keypress', function(evt) {
                     addCoin(i*s,1,j*s);
                 }else{ }
             }
-        }    
+        }
     }
 
     function addCoin(x,y,z){
@@ -210,12 +211,26 @@ window.addEventListener('keypress', function(evt) {
 
     function collectCoin(which) {
         score += 1;
+        MAX_VELOCITY -= 0.3;
+        MAX_VELOCITY = Math.max(MAX_VELOCITY, 0.3);
         var myCoin = _.find(coins, function(c) {
             return c.uuid === which; 
         });
+        ship.position.y -= 0.1;
         myCoin.collected = true;
         coinsound.play();
-        ShipsLog.log("I got "+myCoin.uuid);
+    }
+
+    function dumpCoins() {
+        score = 0;
+        ship.position.y = 0;
+        MAX_VELOCITY = 3;
+
+    }
+
+    function crash() {
+        ship.velocity = -1 * ship.velocity;
+        dumpCoins();
     }
 
     function collider() {
@@ -239,11 +254,12 @@ window.addEventListener('keypress', function(evt) {
 
         _.each(shoals, function(shoalMesh) {
             var radius = shoalMesh.geometry.boundingSphere.radius;
-            if (ship.position.x + shipRadius > shoalMesh.position.x - radius&& 
-                ship.position.x - shipRadius < shoalMesh.position.x + radius &&
-                ship.position.z + shipRadius > shoalMesh.position.z - radius &&
-                ship.position.z - shipRadius < shoalMesh.position.z + radius) {
-                ShipsLog.log("Island " + shoalNumber + " collided with player");
+            var c = shoalMesh.position;
+            var x = Math.pow(radius - shipRadius, 2);
+            var y = Math.pow(c.x - ship.position.x, 2) + Math.pow(c.z - ship.position.z, 2);
+            var z = Math.pow(radius + shipRadius, 2);
+            if (x <= y && y <= z) {
+                crash();
             }
             shoalNumber ++;
         });
@@ -253,17 +269,26 @@ window.addEventListener('keypress', function(evt) {
 
         if (window.kbState.w) {
             ship.velocity += 0.01;
-            if(ship.velocity > MAX_VELOCITY){ ship.velocity = MAX_VELOCITY; }
         }
         if (window.kbState.s) {
             ship.velocity -= 0.01;
-            if(ship.velocity < 0){ ship.velocity = 0; }
         }
+        ship.velocity = Math.min(MAX_VELOCITY, ship.velocity);
+
         if (window.kbState.a) {
+            ship.rotation.z += Math.PI / 180.0;
+        }
+
+        if (window.kbState.d) {
             ship.rotation.z -= Math.PI / 180.0;
         }
-        if (window.kbState.d) {
-            ship.rotation.z += Math.PI / 180.0;
+
+        if (window.mState.zoomIn) {
+            camera.position.y -= 1;
+        }
+
+        if (window.mState.zoomOut) {
+            camera.position.y += 1;
         }
 
         camera.lookAt(ship.position);
